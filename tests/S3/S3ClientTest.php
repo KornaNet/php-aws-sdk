@@ -1,6 +1,7 @@
 <?php
 namespace Aws\Test\S3;
 
+use Aws\Api\DateTimeResult;
 use Aws\Command;
 use Aws\CommandInterface;
 use Aws\Exception\AwsException;
@@ -34,6 +35,7 @@ use Aws\Exception\UnresolvedEndpointException;
 class S3ClientTest extends TestCase
 {
     use UsesServiceTrait;
+    const OPERATIONS_WITH_PARAMS_LOCATION = __DIR__ . '/fixtures/operations-with-params.json';
 
     public function testCanUseBucketEndpoint()
     {
@@ -509,9 +511,16 @@ class S3ClientTest extends TestCase
     public function testAddsLocationConstraintAutomatically($region, $target, $command, $contains)
     {
         $client = $this->getTestClient('S3', ['region' => $region]);
-        $params = ['Bucket' => 'foo'];
+        $params = [
+            'Bucket' => 'foo',
+            'CreateBucketConfiguration' => [
+                'Bucket' => [
+                    'Type' => 'foo'
+                ]
+            ]
+        ];
         if ($region !== $target) {
-            $params['CreateBucketConfiguration'] = ['LocationConstraint' => $target];
+            $params['CreateBucketConfiguration']['LocationConstraint'] = $target;
         }
         $command = $client->getCommand($command, $params);
 
@@ -521,6 +530,12 @@ class S3ClientTest extends TestCase
             $this->assertStringContainsString($text, $body);
         } else {
             $this->assertStringNotContainsString($text, $body);
+        }
+        //ensures original configuration is not overwritten
+        if ($target !== 'us-east-1'
+            && $command->getName() === 'CreateBucket'
+        ) {
+            $this->assertStringContainsString('<Bucket><Type>foo</Type></Bucket>', $body);
         }
     }
 
@@ -532,6 +547,33 @@ class S3ClientTest extends TestCase
             ['us-west-2', 'us-west-2', 'HeadBucket',   false],
             ['us-west-2', 'eu-west-1', 'CreateBucket', true],
             ['us-west-2', 'us-east-1', 'CreateBucket', false],
+        ];
+    }
+
+    /**
+     * @param string $bucket
+     *
+     * @dataProvider directoryBucketLocationConstraintProvider
+     */
+    public function testDoesNotAddLocationConstraintForDirectoryBuckets(
+        string $bucket
+    ): void
+    {
+        $client = $this->getTestClient('s3');
+        $params = ['Bucket' => $bucket];
+        $command = $client->getCommand('CreateBucket', $params);
+        $body = (string) \Aws\serialize($command)->getBody();
+        $this->assertStringNotContainsString('LocationConstraint', $body);
+    }
+
+    public function directoryBucketLocationConstraintProvider(): array
+    {
+        return [
+            ['bucket-base-name--usw2-az1--x-s3'],
+            ['mybucket123--euw1-az2--x-s3'],
+            ['test_bucket_name--apne1-az3--x-s3'],
+            ['valid-name--aps1-az4--x-s3'],
+            ['s3_express_demo_directory_bucket--usw2-az1--x-s3']
         ];
     }
 
@@ -634,25 +676,23 @@ class S3ClientTest extends TestCase
     }
 
     /**
-     * @dataProvider successErrorResponseProvider
+     * @dataProvider s3OperationsProvider
      *
-     * @param Response $failingSuccess
      * @param string   $operation
      * @param array    $payload
      * @param array    $retryOptions
      */
     public function testRetries200Errors(
-        Response $failingSuccess,
-        $operation,
+        string $operation,
         array $payload,
-        $retryOptions
+        array $retryOptions
     ) {
         $retries = $retryOptions['max_attempts'];
         $client = new S3Client([
             'version' => 'latest',
             'region' => 'us-west-2',
             'retries' => $retryOptions,
-            'http_handler' => function () use (&$retries, $failingSuccess) {
+            'http_handler' => function () use (&$retries) {
                 if (0 === --$retries) {
                     return new FulfilledPromise(new Response(
                         200,
@@ -661,7 +701,7 @@ class S3ClientTest extends TestCase
                     ));
                 }
 
-                return new FulfilledPromise($failingSuccess);
+                return new FulfilledPromise(new Response(200, [], $this->getErrorXml()));
             },
         ]);
 
@@ -670,166 +710,45 @@ class S3ClientTest extends TestCase
         $this->assertSame(0, $retries);
     }
 
-    public function successErrorResponseProvider()
+    /**
+     * This provider returns a set of s3 operations along with
+     * the required params, and a retry configuration.
+     *
+     * @return \Generator
+     */
+    public function s3OperationsProvider(): \Generator
     {
-        return [
-            [
-                new Response(200, [], $this->getErrorXml()),
-                'copyObject',
-                [
-                    'Bucket' => 'foo',
-                    'Key' => 'bar',
-                    'CopySource' => 'baz',
-                ],
-                [
-                    'mode' => 'legacy',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getErrorXml()),
-                'copyObject',
-                [
-                    'Bucket' => 'foo',
-                    'Key' => 'bar',
-                    'CopySource' => 'baz',
-                ],
-                [
-                    'mode' => 'standard',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getErrorXml()),
-                'copyObject',
-                [
-                    'Bucket' => 'foo',
-                    'Key' => 'bar',
-                    'CopySource' => 'baz',
-                ],
-                [
-                    'mode' => 'adaptive',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getErrorXml()),
-                'uploadPartCopy',
-                [
-                    'PartNumber' => 1,
-                    'UploadId' => PHP_INT_SIZE,
-                    'Bucket' => 'foo',
-                    'Key' => 'bar',
-                    'CopySource' => 'baz',
-                ],
-                [
-                    'mode' => 'legacy',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getErrorXml()),
-                'uploadPartCopy',
-                [
-                    'PartNumber' => 1,
-                    'UploadId' => PHP_INT_SIZE,
-                    'Bucket' => 'foo',
-                    'Key' => 'bar',
-                    'CopySource' => 'baz',
-                ],
-                [
-                    'mode' => 'standard',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getErrorXml()),
-                'uploadPartCopy',
-                [
-                    'PartNumber' => 1,
-                    'UploadId' => PHP_INT_SIZE,
-                    'Bucket' => 'foo',
-                    'Key' => 'bar',
-                    'CopySource' => 'baz',
-                ],
-                [
-                    'mode' => 'adaptive',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getErrorXml()),
-                'completeMultipartUpload',
-                [
-                    'UploadId' => PHP_INT_SIZE,
-                    'Bucket' => 'foo',
-                    'Key' => 'bar',
-                ],
-                [
-                    'mode' => 'legacy',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getErrorXml()),
-                'completeMultipartUpload',
-                [
-                    'UploadId' => PHP_INT_SIZE,
-                    'Bucket' => 'foo',
-                    'Key' => 'bar',
-                ],
-                [
-                    'mode' => 'standard',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getErrorXml()),
-                'completeMultipartUpload',
-                [
-                    'UploadId' => PHP_INT_SIZE,
-                    'Bucket' => 'foo',
-                    'Key' => 'bar',
-                ],
-                [
-                    'mode' => 'adaptive',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getMalformedXml()),
-                'listObjects',
-                [
-                    'Bucket' => 'foo',
-                ],
-                [
-                    'mode' => 'legacy',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getMalformedXml()),
-                'listObjects',
-                [
-                    'Bucket' => 'foo',
-                ],
-                [
-                    'mode' => 'standard',
-                    'max_attempts' => 11
-                ],
-            ],
-            [
-                new Response(200, [], $this->getMalformedXml()),
-                'listObjects',
-                [
-                    'Bucket' => 'foo',
-                ],
-                [
-                    'mode' => 'adaptive',
-                    'max_attempts' => 11
-                ],
-            ],
+        $operations = $this->loadOperations();
+        $retryModes = [
+            'legacy',
+            'standard',
+            'adaptive'
         ];
+
+        foreach ($operations as $operation) {
+            foreach ($retryModes as $retryMode) {
+                yield ($operation['operation'] . '/' . $retryMode) => [
+                    $operation['operation'],
+                    $operation['params'],
+                    [
+                        'mode' => $retryMode,
+                        'max_attempts' => 5
+                    ],
+                ];
+            }
+        }
+    }
+
+    /**
+     * Load a list of s3 operations along with the required params populated.
+     *
+     * @return array
+     */
+    private function loadOperations(): array
+    {
+        $jsonContent = file_get_contents(self::OPERATIONS_WITH_PARAMS_LOCATION);
+
+        return json_decode($jsonContent, true);
     }
 
     private function getErrorXml()
@@ -1715,7 +1634,7 @@ EOXML;
 
     public function testAppliesAmbiguousSuccessParsing()
     {
-        $this->expectExceptionMessage("An error connecting to the service occurred while performing the CopyObject operation");
+        $this->expectExceptionMessage("Error parsing response for CopyObject: AWS parsing error: Error parsing XML: String could not be parsed as XML");
         $this->expectException(\Aws\S3\Exception\S3Exception::class);
         $httpHandler = function ($request, array $options) {
             return Promise\Create::promiseFor(
@@ -2497,11 +2416,151 @@ EOXML;
         putenv('AWS_REGION=');
     }
 
+    public function testExpiresStringInResult()
+    {
+        $client = new S3Client([
+            'region' => 'us-east-1',
+            'http_handler' => function (RequestInterface $request) {
+                return Promise\Create::promiseFor(new Response(
+                    200,
+                    ['expires' => '1989-08-05']
+                ));
+            },
+        ]);
+        $result = $client->headObject(['Bucket' => 'foo', 'Key' => 'bar']);
+        $this->assertInstanceOf(DateTimeResult::class, $result['Expires']);
+        $this->assertEquals('1989-08-05', $result['ExpiresString']);
+    }
+
+    public function testEmitsWarningWhenExpiresUnparseable()
+    {
+        $this->expectWarning();
+        $this->expectWarningMessage(
+            "Failed to parse the `expires` header as a timestamp due to "
+            . " an invalid timestamp format.\nPlease refer to `ExpiresString` "
+            . "for the unparsed string format of this header.\n"
+        );
+
+        $client = new S3Client([
+            'region' => 'us-east-1',
+            'http_handler' => function (RequestInterface $request) {
+                return Promise\Create::promiseFor(new Response(
+                    200,
+                    ['expires' => 'this-is-not-a-timestamp']
+                ));
+            },
+        ]);
+
+        $client->headObject(['Bucket' => 'foo', 'Key' => 'bar']);
+    }
+
+    public function testExpiresRemainsTimestamp() {
+        //S3 will be changing `Expires` type from `timestamp` to `string`
+        // soon.  This test ensures backward compatibility
+        $apiProvider = static function () {
+            return [
+                'metadata' => [
+                    'signatureVersion' => 'v4',
+                    'protocol' => 'rest-xml'
+                ],
+                'shapes' => [
+                    'Expires' => [
+                        'type' => 'string'
+                    ],
+                ],
+            ];
+        };
+
+        $s3Client = new S3Client([
+            'region' => 'us-west-2',
+            'api_provider' => $apiProvider
+        ]);
+
+        $api = $s3Client->getApi();
+        $expiresType = $api->getDefinition()['shapes']['Expires']['type'];
+        $this->assertEquals('timestamp', $expiresType);
+    }
+
+    public function testBucketNotModifiedWithLegacyEndpointProvider()
+    {
+        $client = new S3Client([
+            'region' => 'us-west-2',
+            'endpoint_provider' => PartitionEndpointProvider::defaultProvider()
+        ]);
+
+        $operations = $client->getApi()->getDefinition()['operations'];
+        $this->assertEquals('/{Bucket}', $operations['ListObjects']['http']['requestUri']);
+        $this->assertEquals(
+            '/{Bucket}?versions',
+            $operations['ListObjectVersions']['http']['requestUri']
+        );
+    }
+
     public function builtinRegionProvider()
     {
         return [
             ['us-east-1' , true],
             ['us-west-2', false]
+        ];
+    }
+
+    /**
+     * This test makes sure that not parsable xml errors are retried.
+     * This handling is specified in the s3 parser implementation.
+     *
+     * @dataProvider clientRetrySettingsProvider
+     * @param array $retrySettings
+     *
+     * @return void
+     */
+    public function testS3RetriesOnNotParsableBody(array $retrySettings)
+    {
+        $retries = $retrySettings['max_attempts'];
+        $client = new S3Client([
+            'region' => 'us-east-2',
+            'version' => 'latest',
+            'retries' => $retrySettings,
+            'http_handler' => function (RequestInterface $req) use (&$retries) {
+                if (0 === --$retries) {
+                    return new Response(200, [], $this->getWellFormedXml());
+                }
+
+                return new Response(200, [], $this->getMalformedXml());
+            }
+        ]);
+        $client->listBuckets();
+        $this->assertEquals(0, $retries);
+    }
+
+    /**
+     * @param string $bucketName
+     * @param bool $expected
+     *
+     * @return void
+     *
+     * @dataProvider directoryBucketProvider
+     */
+    public function testIsDirectoryBucket(string $bucketName, bool $expected): void
+    {
+        $client = $this->getTestClient('s3');
+        $this->assertEquals($expected, $client::isDirectoryBucket($bucketName));
+    }
+
+    public function directoryBucketProvider(): array
+    {
+        return [
+            ['bucket-base-name--usw2-az1--x-s3', true],
+            ['mybucket123--euw1-az2--x-s3', true],
+            ['test_bucket_name--apne1-az3--x-s3', true],
+            ['valid-name--aps1-az4--x-s3', true],
+            ['s3_express_demo_directory_bucket--usw2-az1--x-s3', true],
+            ['bucket-name--usw2-az1--s3alias', false], // ends with -s3alias
+            ['bucketname--usw2-az1--ol-s3', false],    // ends with --ol-s3
+            ['bucketname--usw2-az1.mrap', false],      // ends with .mrap
+            ['invalid_bucket_name--az1--x-s3', false], // missing region in azid
+            ['name--usw2-az1', false],                 // missing --x-s3 at the end
+            ['wrong-format--usw2az1--x-s3', false],    // missing hyphen in azid part
+            ['too-short--x-s3', false],                // invalid azid format, missing prefix
         ];
     }
 }

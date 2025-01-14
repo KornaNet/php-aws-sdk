@@ -765,6 +765,40 @@
         }
       ]
     },
+    "ListVersions": {
+      "name": "ListVersions",
+      "http": {
+        "method": "GET",
+        "requestUri": "/2017-08-29/versions",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListVersionsRequest"
+      },
+      "output": {
+        "shape": "ListVersionsResponse"
+      },
+      "errors": [
+        {
+          "shape": "BadRequestException"
+        },
+        {
+          "shape": "InternalServerErrorException"
+        },
+        {
+          "shape": "ForbiddenException"
+        },
+        {
+          "shape": "NotFoundException"
+        },
+        {
+          "shape": "TooManyRequestsException"
+        },
+        {
+          "shape": "ConflictException"
+        }
+      ]
+    },
     "PutPolicy": {
       "name": "PutPolicy",
       "http": {
@@ -1514,7 +1548,7 @@
           "locationName": "audioNormalizationSettings"
         },
         "AudioSourceName": {
-          "shape": "__string",
+          "shape": "__stringMax2048",
           "locationName": "audioSourceName"
         },
         "AudioType": {
@@ -1557,7 +1591,8 @@
         "DISABLED",
         "AUTO",
         "TRACK",
-        "FRAME"
+        "FRAME",
+        "FORCE"
       ]
     },
     "AudioLanguageCodeControl": {
@@ -2147,6 +2182,10 @@
           "shape": "__integerMin0Max10",
           "locationName": "outlineSize"
         },
+        "RemoveRubyReserveAttributes": {
+          "shape": "RemoveRubyReserveAttributes",
+          "locationName": "removeRubyReserveAttributes"
+        },
         "ShadowColor": {
           "shape": "BurninSubtitleShadowColor",
           "locationName": "shadowColor"
@@ -2399,6 +2438,13 @@
           "locationName": "sourceSettings"
         }
       }
+    },
+    "CaptionSourceByteRateLimit": {
+      "type": "string",
+      "enum": [
+        "ENABLED",
+        "DISABLED"
+      ]
     },
     "CaptionSourceConvertPaintOnToPopOn": {
       "type": "string",
@@ -3155,6 +3201,7 @@
         "MP4",
         "MPD",
         "MXF",
+        "OGG",
         "WEBM",
         "RAW",
         "Y4M"
@@ -3186,6 +3233,10 @@
         "HopDestinations": {
           "shape": "__listOfHopDestination",
           "locationName": "hopDestinations"
+        },
+        "JobEngineVersion": {
+          "shape": "__string",
+          "locationName": "jobEngineVersion"
         },
         "JobTemplate": {
           "shape": "__string",
@@ -3337,6 +3388,10 @@
     "CreateQueueRequest": {
       "type": "structure",
       "members": {
+        "ConcurrentJobs": {
+          "shape": "__integer",
+          "locationName": "concurrentJobs"
+        },
         "Description": {
           "shape": "__string",
           "locationName": "description"
@@ -4563,6 +4618,19 @@
         "USE_MDPM"
       ]
     },
+    "EncryptionContractConfiguration": {
+      "type": "structure",
+      "members": {
+        "SpekeAudioPreset": {
+          "shape": "PresetSpeke20Audio",
+          "locationName": "spekeAudioPreset"
+        },
+        "SpekeVideoPreset": {
+          "shape": "PresetSpeke20Video",
+          "locationName": "spekeVideoPreset"
+        }
+      }
+    },
     "Endpoint": {
       "type": "structure",
       "members": {
@@ -4668,6 +4736,10 @@
     "FileSourceSettings": {
       "type": "structure",
       "members": {
+        "ByteRateLimit": {
+          "shape": "CaptionSourceByteRateLimit",
+          "locationName": "byteRateLimit"
+        },
         "Convert608To708": {
           "shape": "FileSourceConvert608To708",
           "locationName": "convert608To708"
@@ -5043,6 +5115,13 @@
         "ENABLED"
       ]
     },
+    "H264SaliencyAwareEncoding": {
+      "type": "string",
+      "enum": [
+        "DISABLED",
+        "PREFERRED"
+      ]
+    },
     "H264ScanTypeConversionMode": {
       "type": "string",
       "enum": [
@@ -5193,6 +5272,10 @@
           "shape": "H264RepeatPps",
           "locationName": "repeatPps"
         },
+        "SaliencyAwareEncoding": {
+          "shape": "H264SaliencyAwareEncoding",
+          "locationName": "saliencyAwareEncoding"
+        },
         "ScanTypeConversionMode": {
           "shape": "H264ScanTypeConversionMode",
           "locationName": "scanTypeConversionMode"
@@ -5232,6 +5315,10 @@
         "UnregisteredSeiTimecode": {
           "shape": "H264UnregisteredSeiTimecode",
           "locationName": "unregisteredSeiTimecode"
+        },
+        "WriteMp4PackagingType": {
+          "shape": "H264WriteMp4PackagingType",
+          "locationName": "writeMp4PackagingType"
         }
       }
     },
@@ -5276,6 +5363,13 @@
       "enum": [
         "DISABLED",
         "ENABLED"
+      ]
+    },
+    "H264WriteMp4PackagingType": {
+      "type": "string",
+      "enum": [
+        "AVC1",
+        "AVC3"
       ]
     },
     "H265AdaptiveQuantization": {
@@ -6348,7 +6442,7 @@
           "locationName": "dolbyVisionMetadataXml"
         },
         "FileInput": {
-          "shape": "__stringPatternS3Https",
+          "shape": "__stringMax2048PatternS3Https",
           "locationName": "fileInput"
         },
         "FilterEnable": {
@@ -6735,6 +6829,14 @@
           "shape": "__string",
           "locationName": "id"
         },
+        "JobEngineVersionRequested": {
+          "shape": "__string",
+          "locationName": "jobEngineVersionRequested"
+        },
+        "JobEngineVersionUsed": {
+          "shape": "__string",
+          "locationName": "jobEngineVersionUsed"
+        },
         "JobPercentComplete": {
           "shape": "__integer",
           "locationName": "jobPercentComplete"
@@ -6804,6 +6906,19 @@
         "Settings",
         "Role"
       ]
+    },
+    "JobEngineVersion": {
+      "type": "structure",
+      "members": {
+        "ExpirationDate": {
+          "shape": "__timestampUnix",
+          "locationName": "expirationDate"
+        },
+        "Version": {
+          "shape": "__string",
+          "locationName": "version"
+        }
+      }
     },
     "JobMessages": {
       "type": "structure",
@@ -7039,7 +7154,7 @@
           "locationName": "contentReference"
         },
         "CredentialsSecretName": {
-          "shape": "__stringMin1Max512PatternAZAZ09",
+          "shape": "__stringMin1Max2048PatternArnAZSecretsmanagerWD12SecretAZAZ09",
           "locationName": "credentialsSecretName"
         },
         "FileOffset": {
@@ -7445,6 +7560,14 @@
         "Queues": {
           "shape": "__listOfQueue",
           "locationName": "queues"
+        },
+        "TotalConcurrentJobs": {
+          "shape": "__integer",
+          "locationName": "totalConcurrentJobs"
+        },
+        "UnallocatedConcurrentJobs": {
+          "shape": "__integer",
+          "locationName": "unallocatedConcurrentJobs"
         }
       }
     },
@@ -7467,6 +7590,34 @@
         "ResourceTags": {
           "shape": "ResourceTags",
           "locationName": "resourceTags"
+        }
+      }
+    },
+    "ListVersionsRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "__integerMin1Max20",
+          "locationName": "maxResults",
+          "location": "querystring"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken",
+          "location": "querystring"
+        }
+      }
+    },
+    "ListVersionsResponse": {
+      "type": "structure",
+      "members": {
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "Versions": {
+          "shape": "__listOfJobEngineVersion",
+          "locationName": "versions"
         }
       }
     },
@@ -8934,7 +9085,7 @@
           "locationName": "containerSettings"
         },
         "Extension": {
-          "shape": "__string",
+          "shape": "__stringMax256",
           "locationName": "extension"
         },
         "NameModifier": {
@@ -8993,7 +9144,7 @@
           "locationName": "customName"
         },
         "Name": {
-          "shape": "__string",
+          "shape": "__stringMax2048",
           "locationName": "name"
         },
         "OutputGroupSettings": {
@@ -9175,6 +9326,31 @@
         }
       }
     },
+    "PresetSpeke20Audio": {
+      "type": "string",
+      "enum": [
+        "PRESET_AUDIO_1",
+        "PRESET_AUDIO_2",
+        "PRESET_AUDIO_3",
+        "SHARED",
+        "UNENCRYPTED"
+      ]
+    },
+    "PresetSpeke20Video": {
+      "type": "string",
+      "enum": [
+        "PRESET_VIDEO_1",
+        "PRESET_VIDEO_2",
+        "PRESET_VIDEO_3",
+        "PRESET_VIDEO_4",
+        "PRESET_VIDEO_5",
+        "PRESET_VIDEO_6",
+        "PRESET_VIDEO_7",
+        "PRESET_VIDEO_8",
+        "SHARED",
+        "UNENCRYPTED"
+      ]
+    },
     "PricingPlan": {
       "type": "string",
       "enum": [
@@ -9338,6 +9514,10 @@
           "shape": "__string",
           "locationName": "arn"
         },
+        "ConcurrentJobs": {
+          "shape": "__integer",
+          "locationName": "concurrentJobs"
+        },
         "CreatedAt": {
           "shape": "__timestampUnix",
           "locationName": "createdAt"
@@ -9365,6 +9545,10 @@
         "ReservationPlan": {
           "shape": "ReservationPlan",
           "locationName": "reservationPlan"
+        },
+        "ServiceOverrides": {
+          "shape": "__listOfServiceOverride",
+          "locationName": "serviceOverrides"
         },
         "Status": {
           "shape": "QueueStatus",
@@ -9459,6 +9643,13 @@
           "locationName": "channelsOut"
         }
       }
+    },
+    "RemoveRubyReserveAttributes": {
+      "type": "string",
+      "enum": [
+        "DISABLED",
+        "ENABLED"
+      ]
     },
     "RenewalType": {
       "type": "string",
@@ -9718,6 +9909,27 @@
         }
       }
     },
+    "ServiceOverride": {
+      "type": "structure",
+      "members": {
+        "Message": {
+          "shape": "__string",
+          "locationName": "message"
+        },
+        "Name": {
+          "shape": "__string",
+          "locationName": "name"
+        },
+        "OverrideValue": {
+          "shape": "__string",
+          "locationName": "overrideValue"
+        },
+        "Value": {
+          "shape": "__string",
+          "locationName": "value"
+        }
+      }
+    },
     "SimulateReservedQueue": {
       "type": "string",
       "enum": [
@@ -9731,6 +9943,10 @@
         "CertificateArn": {
           "shape": "__stringPatternArnAwsUsGovAcm",
           "locationName": "certificateArn"
+        },
+        "EncryptionContractConfiguration": {
+          "shape": "EncryptionContractConfiguration",
+          "locationName": "encryptionContractConfiguration"
         },
         "ResourceId": {
           "shape": "__string",
@@ -9756,6 +9972,10 @@
         "DashSignaledSystemIds": {
           "shape": "__listOf__stringMin36Max36Pattern09aFAF809aFAF409aFAF409aFAF409aFAF12",
           "locationName": "dashSignaledSystemIds"
+        },
+        "EncryptionContractConfiguration": {
+          "shape": "EncryptionContractConfiguration",
+          "locationName": "encryptionContractConfiguration"
         },
         "HlsSignaledSystemIds": {
           "shape": "__listOf__stringMin36Max36Pattern09aFAF809aFAF409aFAF409aFAF409aFAF12",
@@ -9940,6 +10160,13 @@
         "EMBEDDED",
         "ZEROBASED",
         "SPECIFIEDSTART"
+      ]
+    },
+    "TimecodeTrack": {
+      "type": "string",
+      "enum": [
+        "DISABLED",
+        "ENABLED"
       ]
     },
     "TimedMetadata": {
@@ -10232,6 +10459,10 @@
     "UpdateQueueRequest": {
       "type": "structure",
       "members": {
+        "ConcurrentJobs": {
+          "shape": "__integer",
+          "locationName": "concurrentJobs"
+        },
         "Description": {
           "shape": "__string",
           "locationName": "description"
@@ -10492,6 +10723,10 @@
           "shape": "VideoTimecodeInsertion",
           "locationName": "timecodeInsertion"
         },
+        "TimecodeTrack": {
+          "shape": "TimecodeTrack",
+          "locationName": "timecodeTrack"
+        },
         "VideoPreprocessors": {
           "shape": "VideoPreprocessor",
           "locationName": "videoPreprocessors"
@@ -10522,13 +10757,25 @@
           "shape": "__stringPattern010920405090509092",
           "locationName": "endTimecode"
         },
+        "InitialPosition": {
+          "shape": "VideoOverlayPosition",
+          "locationName": "initialPosition"
+        },
         "Input": {
           "shape": "VideoOverlayInput",
           "locationName": "input"
         },
+        "Playback": {
+          "shape": "VideoOverlayPlayBackMode",
+          "locationName": "playback"
+        },
         "StartTimecode": {
           "shape": "__stringPattern010920405090509092",
           "locationName": "startTimecode"
+        },
+        "Transitions": {
+          "shape": "__listOfVideoOverlayTransition",
+          "locationName": "transitions"
         }
       }
     },
@@ -10557,6 +10804,55 @@
       "type": "structure",
       "members": {
         "EndTimecode": {
+          "shape": "__stringPattern010920405090509092090909",
+          "locationName": "endTimecode"
+        },
+        "StartTimecode": {
+          "shape": "__stringPattern010920405090509092090909",
+          "locationName": "startTimecode"
+        }
+      }
+    },
+    "VideoOverlayPlayBackMode": {
+      "type": "string",
+      "enum": [
+        "ONCE",
+        "REPEAT"
+      ]
+    },
+    "VideoOverlayPosition": {
+      "type": "structure",
+      "members": {
+        "Height": {
+          "shape": "__integerMinNegative1Max2147483647",
+          "locationName": "height"
+        },
+        "Unit": {
+          "shape": "VideoOverlayUnit",
+          "locationName": "unit"
+        },
+        "Width": {
+          "shape": "__integerMinNegative1Max2147483647",
+          "locationName": "width"
+        },
+        "XPosition": {
+          "shape": "__integerMinNegative2147483648Max2147483647",
+          "locationName": "xPosition"
+        },
+        "YPosition": {
+          "shape": "__integerMinNegative2147483648Max2147483647",
+          "locationName": "yPosition"
+        }
+      }
+    },
+    "VideoOverlayTransition": {
+      "type": "structure",
+      "members": {
+        "EndPosition": {
+          "shape": "VideoOverlayPosition",
+          "locationName": "endPosition"
+        },
+        "EndTimecode": {
           "shape": "__stringPattern010920405090509092",
           "locationName": "endTimecode"
         },
@@ -10565,6 +10861,13 @@
           "locationName": "startTimecode"
         }
       }
+    },
+    "VideoOverlayUnit": {
+      "type": "string",
+      "enum": [
+        "PIXELS",
+        "PERCENTAGE"
+      ]
     },
     "VideoPreprocessor": {
       "type": "structure",
@@ -11795,6 +12098,11 @@
       "min": -1,
       "max": 10
     },
+    "__integerMinNegative1Max2147483647": {
+      "type": "integer",
+      "min": -1,
+      "max": 2147483647
+    },
     "__integerMinNegative1Max3": {
       "type": "integer",
       "min": -1,
@@ -11956,6 +12264,12 @@
         "shape": "Job"
       }
     },
+    "__listOfJobEngineVersion": {
+      "type": "list",
+      "member": {
+        "shape": "JobEngineVersion"
+      }
+    },
     "__listOfJobTemplate": {
       "type": "list",
       "member": {
@@ -12016,6 +12330,12 @@
         "shape": "QueueTransition"
       }
     },
+    "__listOfServiceOverride": {
+      "type": "list",
+      "member": {
+        "shape": "ServiceOverride"
+      }
+    },
     "__listOfTeletextPageType": {
       "type": "list",
       "member": {
@@ -12032,6 +12352,12 @@
       "type": "list",
       "member": {
         "shape": "VideoOverlayInputClipping"
+      }
+    },
+    "__listOfVideoOverlayTransition": {
+      "type": "list",
+      "member": {
+        "shape": "VideoOverlayTransition"
       }
     },
     "__listOfWarningGroup": {
@@ -12137,6 +12463,19 @@
       "type": "string",
       "max": 1000
     },
+    "__stringMax2048": {
+      "type": "string",
+      "max": 2048
+    },
+    "__stringMax2048PatternS3Https": {
+      "type": "string",
+      "max": 2048,
+      "pattern": "^s3://([^\\/]+\\/+)+((([^\\/]*)))|^https?://[^\\/].*[^&]$"
+    },
+    "__stringMax256": {
+      "type": "string",
+      "max": 256
+    },
     "__stringMin0": {
       "type": "string",
       "min": 0
@@ -12197,6 +12536,12 @@
       "min": 1,
       "max": 20
     },
+    "__stringMin1Max2048PatternArnAZSecretsmanagerWD12SecretAZAZ09": {
+      "type": "string",
+      "min": 1,
+      "max": 2048,
+      "pattern": "^(arn:[a-z-]+:secretsmanager:[\\w-]+:\\d{12}:secret:)?[a-zA-Z0-9_\\/_+=.@-]*$"
+    },
     "__stringMin1Max256": {
       "type": "string",
       "min": 1,
@@ -12211,12 +12556,6 @@
       "type": "string",
       "min": 1,
       "max": 50,
-      "pattern": "^[a-zA-Z0-9_\\/_+=.@-]*$"
-    },
-    "__stringMin1Max512PatternAZAZ09": {
-      "type": "string",
-      "min": 1,
-      "max": 512,
       "pattern": "^[a-zA-Z0-9_\\/_+=.@-]*$"
     },
     "__stringMin24Max512PatternAZaZ0902": {

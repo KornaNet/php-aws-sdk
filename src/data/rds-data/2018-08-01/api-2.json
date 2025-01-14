@@ -2,9 +2,10 @@
   "version":"2.0",
   "metadata":{
     "apiVersion":"2018-08-01",
+    "auth":["aws.auth#sigv4"],
     "endpointPrefix":"rds-data",
-    "jsonVersion":"1.1",
     "protocol":"rest-json",
+    "protocols":["rest-json"],
     "serviceFullName":"AWS RDS DataService",
     "serviceId":"RDS Data",
     "signatureVersion":"v4",
@@ -25,6 +26,7 @@
         {"shape":"SecretsErrorException"},
         {"shape":"HttpEndpointNotEnabledException"},
         {"shape":"DatabaseErrorException"},
+        {"shape":"DatabaseResumingException"},
         {"shape":"DatabaseUnavailableException"},
         {"shape":"TransactionNotFoundException"},
         {"shape":"InvalidSecretException"},
@@ -50,6 +52,7 @@
         {"shape":"SecretsErrorException"},
         {"shape":"HttpEndpointNotEnabledException"},
         {"shape":"DatabaseErrorException"},
+        {"shape":"DatabaseResumingException"},
         {"shape":"DatabaseUnavailableException"},
         {"shape":"TransactionNotFoundException"},
         {"shape":"InvalidSecretException"},
@@ -105,7 +108,8 @@
         {"shape":"ServiceUnavailableError"}
       ],
       "deprecated":true,
-      "deprecatedMessage":"The ExecuteSql API is deprecated, please use the ExecuteStatement API."
+      "deprecatedMessage":"The ExecuteSql API is deprecated, please use the ExecuteStatement API.",
+      "deprecatedSince":"2019-03-21"
     },
     "ExecuteStatement":{
       "name":"ExecuteStatement",
@@ -120,6 +124,7 @@
         {"shape":"SecretsErrorException"},
         {"shape":"HttpEndpointNotEnabledException"},
         {"shape":"DatabaseErrorException"},
+        {"shape":"DatabaseResumingException"},
         {"shape":"DatabaseUnavailableException"},
         {"shape":"TransactionNotFoundException"},
         {"shape":"InvalidSecretException"},
@@ -331,6 +336,17 @@
       },
       "error":{
         "httpStatusCode":404,
+        "senderFault":true
+      },
+      "exception":true
+    },
+    "DatabaseResumingException":{
+      "type":"structure",
+      "members":{
+        "message":{"shape":"ErrorMessage"}
+      },
+      "error":{
+        "httpStatusCode":400,
         "senderFault":true
       },
       "exception":true

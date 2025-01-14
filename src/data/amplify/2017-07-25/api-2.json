@@ -11,7 +11,8 @@
     "serviceId":"Amplify",
     "signatureVersion":"v4",
     "signingName":"amplify",
-    "uid":"amplify-2017-07-25"
+    "uid":"amplify-2017-07-25",
+    "auth":["aws.auth#sigv4"]
   },
   "operations":{
     "CreateApp":{
@@ -638,7 +639,10 @@
         "enableAutoBranchCreation":{"shape":"EnableAutoBranchCreation"},
         "autoBranchCreationPatterns":{"shape":"AutoBranchCreationPatterns"},
         "autoBranchCreationConfig":{"shape":"AutoBranchCreationConfig"},
-        "repositoryCloneMethod":{"shape":"RepositoryCloneMethod"}
+        "repositoryCloneMethod":{"shape":"RepositoryCloneMethod"},
+        "cacheConfig":{"shape":"CacheConfig"},
+        "webhookCreateTime":{"shape":"webhookCreateTime"},
+        "wafConfiguration":{"shape":"WafConfiguration"}
       }
     },
     "AppArn":{
@@ -858,6 +862,20 @@
       "pattern":"(?s).+",
       "sensitive":true
     },
+    "CacheConfig":{
+      "type":"structure",
+      "required":["type"],
+      "members":{
+        "type":{"shape":"CacheConfigType"}
+      }
+    },
+    "CacheConfigType":{
+      "type":"string",
+      "enum":[
+        "AMPLIFY_MANAGED",
+        "AMPLIFY_MANAGED_NO_COOKIES"
+      ]
+    },
     "Certificate":{
       "type":"structure",
       "required":["type"],
@@ -933,7 +951,8 @@
         "customHeaders":{"shape":"CustomHeaders"},
         "enableAutoBranchCreation":{"shape":"EnableAutoBranchCreation"},
         "autoBranchCreationPatterns":{"shape":"AutoBranchCreationPatterns"},
-        "autoBranchCreationConfig":{"shape":"AutoBranchCreationConfig"}
+        "autoBranchCreationConfig":{"shape":"AutoBranchCreationConfig"},
+        "cacheConfig":{"shape":"CacheConfig"}
       }
     },
     "CreateAppResult":{
@@ -1642,6 +1661,7 @@
     "JobStatus":{
       "type":"string",
       "enum":[
+        "CREATED",
         "PENDING",
         "PROVISIONING",
         "RUNNING",
@@ -1676,7 +1696,9 @@
         "startTime":{"shape":"StartTime"},
         "status":{"shape":"JobStatus"},
         "endTime":{"shape":"EndTime"},
-        "jobType":{"shape":"JobType"}
+        "jobType":{"shape":"JobType"},
+        "sourceUrl":{"shape":"SourceUrl"},
+        "sourceUrlType":{"shape":"SourceUrlType"}
       }
     },
     "JobType":{
@@ -2057,7 +2079,14 @@
     "SourceUrl":{
       "type":"string",
       "max":3000,
-      "pattern":"(?s).*"
+      "pattern":"^(s3|https|http)://.*"
+    },
+    "SourceUrlType":{
+      "type":"string",
+      "enum":[
+        "ZIP",
+        "BUCKET_PREFIX"
+      ]
     },
     "StackArn":{
       "type":"string",
@@ -2099,7 +2128,8 @@
           "locationName":"branchName"
         },
         "jobId":{"shape":"JobId"},
-        "sourceUrl":{"shape":"SourceUrl"}
+        "sourceUrl":{"shape":"SourceUrl"},
+        "sourceUrlType":{"shape":"SourceUrlType"}
       }
     },
     "StartDeploymentResult":{
@@ -2384,7 +2414,8 @@
         "autoBranchCreationConfig":{"shape":"AutoBranchCreationConfig"},
         "repository":{"shape":"Repository"},
         "oauthToken":{"shape":"OauthToken"},
-        "accessToken":{"shape":"AccessToken"}
+        "accessToken":{"shape":"AccessToken"},
+        "cacheConfig":{"shape":"CacheConfig"}
       }
     },
     "UpdateAppResult":{
@@ -2505,6 +2536,30 @@
       "max":1000
     },
     "Verified":{"type":"boolean"},
+    "WafConfiguration":{
+      "type":"structure",
+      "members":{
+        "webAclArn":{"shape":"WebAclArn"},
+        "wafStatus":{"shape":"WafStatus"},
+        "statusReason":{"shape":"StatusReason"}
+      }
+    },
+    "WafStatus":{
+      "type":"string",
+      "enum":[
+        "ASSOCIATING",
+        "ASSOCIATION_FAILED",
+        "ASSOCIATION_SUCCESS",
+        "DISASSOCIATING",
+        "DISASSOCIATION_FAILED"
+      ]
+    },
+    "WebAclArn":{
+      "type":"string",
+      "max":512,
+      "min":0,
+      "pattern":"^arn:aws:wafv2:.*"
+    },
     "Webhook":{
       "type":"structure",
       "required":[
@@ -2542,6 +2597,7 @@
     "Webhooks":{
       "type":"list",
       "member":{"shape":"Webhook"}
-    }
+    },
+    "webhookCreateTime":{"type":"timestamp"}
   }
 }
